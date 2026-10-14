@@ -1,0 +1,104 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Walk n Gain – Preview</title><meta name="color-scheme" content="light dark">
+<style>
+:root{--bg:#eef3f6;--sf:#fff;--tx:#10242c;--mu:#5d727b;--ac:#17606f;--co:#b87800;--ln:#cfdbe0;--er:#b3261e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1a1f;--sf:#15262d;--tx:#e6f0f3;--mu:#8fa6af;--ac:#4fb3c6;--co:#e8a317;--ln:#26404a;--er:#f2b8b5}}
+:root[data-theme="dark"]{--bg:#0d1a1f;--sf:#15262d;--tx:#e6f0f3;--mu:#8fa6af;--ac:#4fb3c6;--co:#e8a317;--ln:#26404a;--er:#f2b8b5}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--tx);font-family:"Trebuchet MS",system-ui,sans-serif;padding:14px}
+.v{max-width:780px;margin:auto}.tabs,.top{display:flex;gap:6px;margin-bottom:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}.tabs{justify-content:flex-start}
+button{background:var(--ac);color:var(--bg);border:0;border-radius:8px;padding:9px 12px;font:inherit;cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--co);outline-offset:2px}
+button.o{background:none;color:var(--ac);border:1px solid var(--ac)}button:disabled{opacity:.4;cursor:not-allowed}
+.phone{max-width:380px;margin:auto}.card{background:var(--sf);border:1px solid var(--ln);border-radius:12px;padding:14px;margin-bottom:12px}
+.big{font-size:44px;font-weight:700;line-height:1.1}.mu{color:var(--mu);font-size:13px}.er{color:var(--er);font-size:14px}.bar{height:10px;background:var(--ln);border-radius:5px;overflow:hidden;margin:10px 0}.bar i{display:block;height:100%;background:var(--ac)}
+.bp{color:var(--co);font-weight:700}.row{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--ln)}.sim{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}.grid .card{margin:0}
+input,select{width:100%;padding:8px;margin:3px 0;border-radius:6px;border:1px solid var(--ln);background:var(--bg);color:var(--tx);font:inherit}
+.scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:left;padding:6px;border-bottom:1px solid var(--ln)}
+.thumb{aspect-ratio:1;border-radius:8px;display:grid;place-items:center;font-size:40px;background:var(--bg);margin-bottom:6px}
+.acc{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:none;color:var(--tx);border:1px solid var(--ln);margin-bottom:8px}.g{width:28px;height:28px;border-radius:50%;background:#fff;color:#4285f4;font-weight:700;display:grid;place-items:center;flex:none}
+.tag{font-size:12px;border:1px solid var(--ln);border-radius:10px;padding:1px 8px}
+</style></head><body><div class="v" id="v"></div>
+<script>
+const DAY=864e5,MIN=50,ADMINS=['admin@walkngain.com'],T0=Date.now();
+const DB={users:{
+ 'priya@gmail.com':{name:'Priya Nair',steps:7400,credited:7,lots:[{bp:70,rem:70,exp:T0+20*DAY}],blocked:false},
+ 'amit@gmail.com':{name:'Amit Verma',steps:12500,credited:12,lots:[{bp:400,rem:400,exp:T0+9*DAY},{bp:120,rem:120,exp:T0+25*DAY}],blocked:false}},
+ prods:[{id:1,n:'Steel Water Bottle',e:'🧴',bp:300,st:12,d:'750 ml insulated bottle'},{id:2,n:'Running Socks (3 pack)',e:'🧦',bp:250,st:30,d:'Breathable, cushioned'},{id:3,n:'Yoga Mat',e:'🧘',bp:600,st:8,d:'6 mm non-slip mat'},{id:4,n:'Health Tracker Band',e:'⌚',bp:900,st:5,d:'Heart rate and sleep'}],orders:[]};
+const S={me:null,view:'app',cart:{},msg:'',tab:'prod',mot:false,err:''};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const U=e=>DB.users[e||S.me],isAdmin=()=>!!S.me&&ADMINS.includes(S.me);
+const live=u=>u.lots.filter(l=>l.exp>Date.now()&&l.rem>0),bal=u=>live(u).reduce((a,l)=>a+l.rem,0),next=u=>live(u).reduce((m,l)=>Math.min(m,l.exp),Infinity);
+const fd=t=>new Date(t).toLocaleDateString(undefined,{day:'numeric',month:'short'});
+function walk(n,e){const u=U(e),b0=u.credited;u.steps+=n;const b=Math.floor(u.steps/1000);if(b>u.credited){const g=(b-u.credited)*10;u.lots.push({bp:g,rem:g,exp:Date.now()+30*DAY});u.credited=b}return u.credited>b0}
+function login(email,name){email=email.trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(email)){S.err='Enter a valid Gmail address.';return draw()}
+ if(DB.users[email]&&DB.users[email].blocked){S.err='This account is blocked by the admin.';return draw()}
+ if(!DB.users[email])DB.users[email]={name:name||email.split('@')[0],steps:0,credited:0,lots:[],blocked:false};
+ Object.assign(S,{me:email,view:'app',err:'',msg:'',cart:{}});draw()}
+function logout(){stopMotion();S.me=null;S.view='app';draw()}
+const locked=()=>bal(U())<MIN;
+function go(v){S.msg='';if(v=='store'&&locked()){S.msg='KANTARA unlocks at '+MIN+' BP.';v='app'}S.view=v;draw()}
+function add(id){S.cart[id]=(S.cart[id]||0)+1;S.msg='';draw()}
+const total=()=>Object.entries(S.cart).reduce((t,[i,q])=>t+DB.prods.find(p=>p.id==i).bp*q,0);
+function buy(){const u=U(),t=total(),a=document.getElementById('addr').value.trim();
+ if(!a)S.msg='Enter a delivery address.';else if(bal(u)<MIN)S.msg='You need at least '+MIN+' BP to shop.';else if(bal(u)<t)S.msg='Not enough BP for this cart.';
+ else{let left=t;live(u).sort((x,y)=>x.exp-y.exp).forEach(l=>{const k=Math.min(left,l.rem);l.rem-=k;left-=k});
+  const items=Object.entries(S.cart).map(([i,q])=>{const p=DB.prods.find(p=>p.id==i);p.st-=q;return p.n+' ×'+q});
+  DB.orders.unshift({id:'KN'+(1001+DB.orders.length),email:S.me,items,bp:t,addr:a,status:'PLACED'});u.spent=(u.spent||0)+t;S.cart={};S.msg='Order placed. '+t+' BP used.'}draw()}
+const setSt=(i,v)=>{DB.orders[i].status=v};
+function saveProd(){const g=id=>document.getElementById(id).value;if(!g('pn')||!(+g('pb')>0))return;DB.prods.push({id:Date.now(),n:g('pn'),e:'🎁',bp:+g('pb'),st:+g('ps')||0,d:g('pd')});draw()}
+const stock=(id,d)=>{const p=DB.prods.find(p=>p.id==id);p.st=Math.max(0,p.st+d);draw()};
+const delProd=id=>{DB.prods=DB.prods.filter(p=>p.id!=id);draw()};
+const adj=(e,n)=>{const u=U(e);if(n>0)u.lots.push({bp:n,rem:n,exp:Date.now()+30*DAY});else{let l=-n;live(u).sort((a,b)=>a.exp-b.exp).forEach(x=>{const k=Math.min(l,x.rem);x.rem-=k;l-=k})}draw()};
+const blk=e=>{U(e).blocked=!U(e).blocked;draw()};
+const tab=t=>{S.tab=t;draw()};
+function loginV(){return `<div class="phone"><div class="card"><h2 style="margin:0 0 4px">Walk n Gain</h2><div class="mu">Walk. Earn BP. Shop at KANTARA.</div></div>
+<div class="card"><b>Choose a Google account</b><div class="mu" style="margin-bottom:10px">Simulated Google picker for this preview.</div>
+<button class="acc" onclick="login('rahul.sharma@gmail.com','Rahul Sharma')"><span class="g">G</span><span>Rahul Sharma<br><span class="mu">rahul.sharma@gmail.com</span></span></button>
+<button class="acc" onclick="login('admin@walkngain.com','Store Admin')"><span class="g">G</span><span>Store Admin <span class="tag">admin</span><br><span class="mu">admin@walkngain.com</span></span></button>
+<button class="acc" onclick="login('priya@gmail.com','Priya Nair')"><span class="g">G</span><span>Priya Nair<br><span class="mu">priya@gmail.com</span></span></button>
+<input id="em" placeholder="Or type another Gmail address" aria-label="Gmail address"><button onclick="login(document.getElementById('em').value)">Continue with Google</button>
+<div class="er" role="alert">${esc(S.err)}</div></div><div class="mu">Only accounts on the admin list see the Admin tab. Everyone else only sees the app and the store.</div></div>`}
+function appV(){const u=U(),b=bal(u),n=next(u),ea=u.lots.reduce((a,l)=>a+l.bp,0),ex=u.lots.filter(l=>l.exp<=Date.now()).reduce((a,l)=>a+l.rem,0),sp=u.spent||0;
+const bd=[['First 1,000 steps',u.steps>=1000],['10,000-step day',u.steps>=10000],['KANTARA unlocked ('+MIN+' BP)',ea>=MIN],['First purchase',sp>0]];
+return `<div class="phone"><div class="card"><div class="mu">Today</div><div class="big" id="st">${u.steps.toLocaleString()}</div><div class="bar"><i id="bar" style="width:${Math.min(100,u.steps/100)}%"></i></div>
+<div class="mu" id="nx">Goal 10,000 · next +10 BP at ${(Math.floor(u.steps/1000)+1)*1000}</div>
+<div class="sim"><button onclick="step(1)">Take a step</button><button class="o" onclick="step(10)">Walk 10 steps</button><button class="o" onclick="motion()">${S.mot?'Stop phone sensor':'Use phone motion sensor'}</button></div>
+<div class="mu">Steps count only when you walk. The real app reads the phone's step sensor; here, tap the button for each step or turn on the motion sensor on a phone.</div><div class="er" role="status">${esc(S.msg)}</div>${S.mot?`<div class="mu" id="dg">Waiting for sensor data… threshold ${sens.toFixed(1)}</div><div class="sim"><button class="o" onclick="sens=Math.max(.4,sens-.3);draw()">More sensitive</button><button class="o" onclick="sens+=.3;draw()">Less sensitive</button></div>`:''}</div>
+<div class="card"><div class="mu">BP wallet</div><div class="big bp">${b} BP</div>${n<Infinity?`<div class="mu">Oldest points expire ${fd(n)}</div>`:''}
+<div class="mu">${b>=MIN?'KANTARA store unlocked':'Collect '+(MIN-b)+' more BP to unlock the KANTARA store (minimum '+MIN+' BP)'}</div><br>
+<button ${b>=MIN?'':'disabled'} onclick="go('store')">${b>=MIN?'Open KANTARA store':'KANTARA store (locked)'}</button>
+<button class="o" style="margin-top:8px" onclick="U().lots.forEach(l=>l.exp-=31*DAY);draw()">Fast-forward 31 days (test expiry)</button></div>
+<div class="card"><b>Achievements</b><div class="row"><span>BP earned</span><span>${ea}</span></div><div class="row"><span>BP spent</span><span>${sp}</span></div><div class="row"><span>BP expired</span><span>${ex}</span></div>
+<div class="sim">${bd.map(([l,ok])=>`<span class="tag" style="${ok?'border-color:var(--ac);color:var(--ac)':''}">${ok?'✓ ':'○ '}${l}</span>`).join('')}</div></div></div>`}
+function storeV(){const u=U(),b=bal(u),t=total(),c=Object.entries(S.cart);
+return `<div class="card"><h2 style="margin:0">KANTARA</h2><span class="bp">${b} BP</span> available${b<MIN?`<div class="mu">Shopping unlocks at ${MIN} BP. Walk in the app to earn more.</div>`:''}</div>
+<div class="grid">${DB.prods.map(p=>`<div class="card"><div class="thumb">${p.e}</div><b>${esc(p.n)}</b><div class="mu">${esc(p.d)}</div><div><span class="bp">${p.bp} BP</span> <span class="mu">${p.st} left</span></div><button ${p.st>0?'':'disabled'} onclick="add(${p.id})" style="margin-top:6px">Add to cart</button></div>`).join('')}</div>
+<div class="card" style="margin-top:12px"><b>Cart</b>${c.length?c.map(([i,q])=>{const p=DB.prods.find(p=>p.id==i);return `<div class="row"><span>${esc(p.n)} ×${q}</span><span>${p.bp*q} BP</span></div>`}).join('')+`<div class="row"><b>Total</b><b class="bp">${t} BP</b></div><input id="addr" placeholder="Delivery address"><button onclick="buy()" ${b>=MIN&&t<=b?'':'disabled'}>Place order with BP</button>`:'<div class="mu">Your cart is empty.</div>'}<div class="mu" role="status">${S.msg}</div></div>`}
+function adminV(){const us=Object.entries(DB.users),o=DB.orders;
+const kp=`<div class="grid" style="margin-bottom:12px"><div class="card"><div class="mu">Users</div><b>${us.length}</b></div><div class="card"><div class="mu">Total steps</div><b>${us.reduce((a,[,u])=>a+u.steps,0).toLocaleString()}</b></div><div class="card"><div class="mu">Active BP</div><b>${us.reduce((a,[,u])=>a+bal(u),0)}</b></div><div class="card"><div class="mu">New orders</div><b>${o.filter(x=>x.status=='PLACED').length}</b></div></div>`;
+const nav=`<div class="sim">${[['prod','Store products'],['ord','Orders ('+o.length+')'],['usr','Users ('+us.length+')']].map(([k,l])=>`<button class="${S.tab==k?'':'o'}" onclick="tab('${k}')">${l}</button>`).join('')}</div>`;
+if(S.tab=='prod')return kp+nav+`<div class="card"><b>Add product</b><input id="pn" placeholder="Name"><input id="pd" placeholder="Description"><input id="pb" type="number" placeholder="Price in BP"><input id="ps" type="number" placeholder="Stock"><button onclick="saveProd()">Save product</button></div><div class="card scroll"><table><tr><th>Product</th><th>BP</th><th>Stock</th><th></th></tr>${DB.prods.map(p=>`<tr><td>${p.e} ${esc(p.n)}</td><td>${p.bp}</td><td>${p.st}</td><td><button class="o" onclick="stock(${p.id},-1)" aria-label="Decrease stock">−</button> <button class="o" onclick="stock(${p.id},1)" aria-label="Increase stock">+</button> <button class="o" onclick="delProd(${p.id})">Delete</button></td></tr>`).join('')}</table></div>`;
+if(S.tab=='ord')return kp+nav+`<div class="card scroll">${o.length?`<table><tr><th>Order</th><th>Customer</th><th>Items</th><th>BP</th><th>Ship to</th><th>Status</th></tr>${o.map((x,i)=>`<tr><td>${x.id}</td><td>${esc(x.email)}</td><td>${x.items.map(esc).join(', ')}</td><td>${x.bp}</td><td>${esc(x.addr)}</td><td><select onchange="setSt(${i},this.value)">${['PLACED','CONFIRMED','SHIPPED','DELIVERED','CANCELLED'].map(s=>`<option ${s==x.status?'selected':''}>${s}</option>`).join('')}</select></td></tr>`).join('')}</table>`:'<div class="mu">No orders yet. Sign in as a user with 500+ BP and place one from KANTARA.</div>'}</div>`;
+return kp+nav+`<div class="card scroll"><table><tr><th>User</th><th>Steps today</th><th>Active BP</th><th>Status</th><th>Manage</th></tr>${us.map(([e,u])=>`<tr><td>${esc(u.name)}<div class="mu">${esc(e)}</div></td><td>${u.steps.toLocaleString()}</td><td>${bal(u)}</td><td>${u.blocked?'<span class="er">Blocked</span>':'Active'}</td><td><button class="o" onclick="adj('${esc(e)}',50)">+50 BP</button> <button class="o" onclick="adj('${esc(e)}',-50)">−50 BP</button> <button class="o" onclick="blk('${esc(e)}')">${u.blocked?'Unblock':'Block'}</button></td></tr>`).join('')}</table></div>`}
+function draw(){const el=document.getElementById('v');if(!S.me){el.innerHTML=loginV();return}
+ if(S.view=='admin'&&!isAdmin())S.view='app';if(S.view=='store'&&locked())S.view='app';const u=U();
+ const tabs=[['app','Walk n Gain'],['store','KANTARA store']].concat(isAdmin()?[['admin','Admin panel']]:[]);
+ el.innerHTML=`<div class="top"><span><b>${esc(u.name)}</b> <span class="mu">${esc(S.me)}</span>${isAdmin()?' <span class="tag">admin</span>':''}</span><button class="o" onclick="logout()">Log out</button></div>
+ <div class="tabs">${tabs.map(([k,l])=>{const lk=k=='store'&&locked();return `<button class="${S.view==k?'':'o'}" ${lk?'disabled title="Unlocks at '+MIN+' BP"':''} onclick="go('${k}')">${l}${lk?' (locked)':''}</button>`}).join('')}</div>`+({app:appV,store:storeV,admin:adminV}[S.view])()}
+function paint(){const u=U(),s=document.getElementById('st');if(!s)return;s.textContent=u.steps.toLocaleString();document.getElementById('bar').style.width=Math.min(100,u.steps/100)+'%';document.getElementById('nx').textContent='Goal 10,000 · next +10 BP at '+(Math.floor(u.steps/1000)+1)*1000}
+function step(n){if(!S.me)return;const c=walk(n);if(S.view!='app')return;c?draw():paint()}
+let lastT=0,g=9.8,sm=0,prevSm=0,ev=0,nv=0,sens=1.2,acc=null;
+function proc(x,y,z){const m=Math.hypot(x,y,z);g+=(m-g)*.05;sm+=((m-g)-sm)*.4;const t=Date.now();
+ if(sm>sens&&prevSm<=sens&&t-lastT>280){lastT=t;step(1)}prevSm=sm;ev++;if(ev%10==0)diag()}
+function diag(){const el=document.getElementById('dg');if(el)el.textContent='Readings: '+ev+' · empty events: '+nv+' · signal '+sm.toFixed(2)+' · threshold '+sens.toFixed(1)}
+function onMot(e){const a=e.accelerationIncludingGravity;if(!a||a.x==null){nv++;if(nv%20==1)diag();return}proc(a.x,a.y,a.z)}
+function stopMotion(){removeEventListener('devicemotion',onMot);try{acc&&acc.stop()}catch(e){}acc=null;S.mot=false}
+async function motion(){if(S.mot){stopMotion();S.msg='';return draw()}
+ try{if(window.DeviceMotionEvent&&DeviceMotionEvent.requestPermission&&(await DeviceMotionEvent.requestPermission())!=='granted'){S.msg='Motion permission denied.';return draw()}}catch(e){}
+ ev=0;nv=0;g=9.8;sm=0;prevSm=0;addEventListener('devicemotion',onMot);S.mot=true;S.msg='Hold the phone and walk. Counting is approximate.';
+ setTimeout(()=>{if(S.mot&&ev===0&&window.Accelerometer){try{acc=new Accelerometer({frequency:30});acc.addEventListener('reading',()=>proc(acc.x,acc.y,acc.z));acc.start()}catch(e){}}},1500);
+ setTimeout(()=>{if(S.mot&&ev===0){S.msg=nv>0?'The browser is sending empty motion data. In Chrome allow Motion sensors for this site (lock icon > Permissions) and open the https link, not a saved file. Or use Take a step.':'No sensor data received. Open the https link directly in Chrome, not inside another app or as a saved file. Or use Take a step.';draw()}},3800);
+ draw()}
+draw();
+</script></body></html>
